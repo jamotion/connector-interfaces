@@ -19,30 +19,30 @@
 #
 ##############################################################################
 from mock import patch
-from . import odbc_test_common
-from . import pyodbc_common
-from ..unit.odbc_adapter import ODBCAdapter
+from . import database_test_common
+from . import pydatabase_common
+from ..unit.database_adapter import DatabaseAdapter
 
 
-class test_sql_adapter(odbc_test_common.ODBCBaseTestClass):
+class test_sql_adapter(database_test_common.DatabaseBaseTestClass):
 
     def setUp(self):
         super(test_sql_adapter, self).setUp()
-        self.target_model = self.registry('odbc.connector.test.code.a')
+        self.target_model = self.registry('database.connector.test.code.a')
 
-    @patch('pyodbc.connect', pyodbc_common.pyodbc_mock)
+    @patch('pydatabase.connect', pydatabase_common.pydatabase_mock)
     def test_00_test_sql_adapter_search(self):
         """ We test there is no regression in code that search external DB,
         This is a simple test that ensure Generated
         SQL is matched in a collection
 
         """
-        adapter = self.connector_env.get_connector_unit(ODBCAdapter)
+        adapter = self.connector_env.get_connector_unit(DatabaseAdapter)
         self.assertEqual(adapter._table_name, 'mega_code_table')
         search_res = adapter.search()
         self.assertEqual(search_res, ['1', '2', '3', '4', '5'])
 
-    @patch('pyodbc.connect', pyodbc_common.pyodbc_mock)
+    @patch('pydatabase.connect', pydatabase_common.pydatabase_mock)
     def test_01_test_sql_adapter_read(self):
         """ We test there is no regression in code that search external DB,
         This is a simple test that ensure Generated SQL
@@ -50,7 +50,7 @@ class test_sql_adapter(odbc_test_common.ODBCBaseTestClass):
         We also validate memoizer
 
         """
-        adapter = self.connector_env.get_connector_unit(ODBCAdapter)
+        adapter = self.connector_env.get_connector_unit(DatabaseAdapter)
         self.assertEqual(adapter._table_name, 'mega_code_table')
         read_res = adapter.read(['2', '1', '3', '4', '5'])
         data = [x for x in read_res]  # read_res is a generator

@@ -22,23 +22,23 @@ import time
 import psycopg2
 
 from openerp.tools.misc import mute_logger
-from . import odbc_test_common
+from . import database_test_common
 from .adapter_data import simulated_mega_table
 
 
-class test_direct_synchro(odbc_test_common.ODBCBaseTestClass):
+class test_direct_synchro(database_test_common.DatabaseBaseTestClass):
 
     def setUp(self):
         super(test_direct_synchro, self).setUp()
-        self.connector_model = self.registry('odbc.data.connector.test.code.a')
-        self.target_model = self.registry('odbc.connector.test.code.a')
+        self.connector_model = self.registry('database.data.connector.test.code.a')
+        self.target_model = self.registry('database.connector.test.code.a')
         irmodel_model = self.registry('ir.model')
         model = irmodel_model.search(
             self.cr, self.uid,
             [('model', '=', self.connector_model._name)]
         )
         self.assertTrue(model, msg='No model found')
-        register_model = self.registry('connector.odbc.import.register')
+        register_model = self.registry('connector.database.import.register')
         register_model.create(
             self.cr,
             self.uid,
@@ -54,14 +54,14 @@ class test_direct_synchro(odbc_test_common.ODBCBaseTestClass):
         cr, uid = self.cr, self.uid
         existing = self.target_model.search(cr, uid, [])
         self.assertEqual(existing, [])
-        with odbc_test_common.mock_adapter('mega_code_table', 'mg_code',
+        with database_test_common.mock_adapter('mega_code_table', 'mg_code',
                                            simulated_mega_table):
-            self.backend.direct_import(['odbc.data.connector.test.code.a'],
+            self.backend.direct_import(['database.data.connector.test.code.a'],
                                        full=True)
         codes = ['1', '2', '3', '4', '5']
         # we validate relation Model between backend, external data and openerp
         imported = self.connector_model.search(
-            cr, uid, [('odbc_code', 'in', codes),
+            cr, uid, [('database_code', 'in', codes),
                       ('backend_id', '=', self.backend.id)]
         )
         self.assertEqual(len(imported), 5,
@@ -106,14 +106,14 @@ class test_direct_synchro(odbc_test_common.ODBCBaseTestClass):
         register = self.backend._get_register(self.connector_model._name)
         register.write({'last_import_date': "2012-06-01 00:00:00"})
         cr.execute(
-            'Select MAX(sync_date) FROM odbc_data_connector_test_code_a'
+            'Select MAX(sync_date) FROM database_data_connector_test_code_a'
         )
         highest_update_date = cr.fetchone()[0]
         time.sleep(1)
-        with odbc_test_common.mock_adapter('mega_code_table', 'mg_code',
+        with database_test_common.mock_adapter('mega_code_table', 'mg_code',
                                            simulated_mega_table):
             self.backend.direct_import(
-                ['odbc.data.connector.test.code.a'],
+                ['database.data.connector.test.code.a'],
                 full=False
             )
         updated_ids = self.connector_model.search(
@@ -135,7 +135,7 @@ class test_direct_synchro(odbc_test_common.ODBCBaseTestClass):
         """I test deletion of data in OpenERP in a correct manner"""
         cr, uid = self.cr, self.uid
         to_del_ids = self.connector_model.search(cr, uid,
-                                                 [('odbc_code', '=', '4')])
+                                                 [('database_code', '=', '4')])
         self.assertTrue(to_del_ids)
         to_del_br = self.connector_model.browse(cr, uid, to_del_ids[0])
         related = to_del_br.openerp_id
@@ -157,13 +157,13 @@ class test_direct_synchro(odbc_test_common.ODBCBaseTestClass):
         cr, uid = self.cr, self.uid
         # code 3  will be imported
         # and when checking missing
-        # we mock 3 was deleted from ODBC data source
+        # we mock 3 was deleted from Database data source
         register = self.backend._get_register(self.connector_model._name)
         register.write({'last_import_date': "2012-06-03 00:00:00"})
-        with odbc_test_common.mock_adapter('mega_code_table', 'mg_code',
+        with database_test_common.mock_adapter('mega_code_table', 'mg_code',
                                            simulated_mega_table):
             self.backend.direct_import(
-                ['odbc.data.connector.test.code.a'],
+                ['database.data.connector.test.code.a'],
                 full=False
             )
         deactivated = self.target_model.search(
@@ -187,7 +187,7 @@ class test_direct_synchro(odbc_test_common.ODBCBaseTestClass):
         cr, uid = self.cr, self.uid
         to_del_ids = self.connector_model.search(
             cr, uid,
-            [('odbc_code', '=', '5')]
+            [('database_code', '=', '5')]
         )
         self.assertTrue(to_del_ids)
         # it should fail

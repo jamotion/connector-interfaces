@@ -28,15 +28,15 @@ from openerp.addons.connector.connector import install_in_connector
 from .unit import import_synchronizer
 from .unit.import_synchronizer import (batch_import,
                                        delayed_batch_import,
-                                       ODBCSynchronizer)
+                                       DatabaseSynchronizer)
 install_in_connector()
 
 
 class import_configurator(models.TransientModel):
-    """ODBC import register
-    Each created register will correspond to a model to import using ODBC
+    """Database import register
+    Each created register will correspond to a model to import using Database
     """
-    _name = 'connector.odbc.import.configurator'
+    _name = 'connector.database.import.configurator'
 
     _rec_name = 'model_id'
 
@@ -45,7 +45,7 @@ class import_configurator(models.TransientModel):
         'What to import'
     )
     backend_id = fields.Many2one(
-        'connector.odbc.data.server.backend',
+        'connector.database.data.server.backend',
         'Backend to configure',
         required=True,
         default=lambda self: self._get_default_backend(),
@@ -63,17 +63,17 @@ class import_configurator(models.TransientModel):
             active_ids = self.env.context.get('active_ids', [None])
             active_id = active_ids[0]
         assert active_id, "No active_id in context"
-        return self.env['connector.odbc.data.server.backend'].browse(active_id)
+        return self.env['connector.database.data.server.backend'].browse(active_id)
 
     @api.model
     def _get_valid_importers(self, backend_id):
         """Return a list of valid model name that can be imported
-        using ODBC connector
+        using Database connector
 
-        Model must be bound to a :py:class:``.unit.importer.ODBCSynchronizer``
+        Model must be bound to a :py:class:``.unit.importer.DatabaseSynchronizer``
         subclass
 
-        :param backend_id: id of a `connector.odbc.data.server.backend` model
+        :param backend_id: id of a `connector.database.data.server.backend` model
         :type backend_id: int
 
         :return: list of corresponding class
@@ -102,16 +102,16 @@ class import_configurator(models.TransientModel):
             for x in _classes(backend_class.parent):
                 yield x
 
-        backend_model = self.env['connector.odbc.data.server.backend']
+        backend_model = self.env['connector.database.data.server.backend']
         irmodel_model = self.env['ir.model']
         backend = backend_model.browse(backend_id)
         backend_class = backend.get_backend()[0]
         avail_models = [x.cls._model_name for x in _classes(backend_class)
-                        if issubclass(x.cls, ODBCSynchronizer)]
+                        if issubclass(x.cls, DatabaseSynchronizer)]
         model_ids = irmodel_model.search([('model', 'in', avail_models)])
         if not model_ids:
             raise NotImplementedError(
-                'No class overriding ODBCSynchronizer are available'
+                'No class overriding DatabaseSynchronizer are available'
             )
         return model_ids
 
@@ -119,9 +119,9 @@ class import_configurator(models.TransientModel):
     def create_register(self):
         """Create a import register from `self` fields value
 
-        This will add a model to import with odbc backend
+        This will add a model to import with database backend
         """
-        register_model = self.env["connector.odbc.import.register"]
+        register_model = self.env["connector.database.import.register"]
         for current in self:
             data = {
                 'backend_id': current.backend_id.id,
@@ -136,7 +136,7 @@ class import_configurator(models.TransientModel):
         """Add dynamic domain on model_id field
 
         In order to limit selection on Odoo model realted to a
-        `ODBCSynchronizer` subclasses.
+        `DatabaseSynchronizer` subclasses.
         The relation is made using the connector backend class decorator
         """
         if context is None:
@@ -170,10 +170,10 @@ class odcb_register(models.Model):
     """Configurable import register
 
     A row of this model represents a data lot to import.
-    The model must be related to a `ODBCSynchronizer` subclasses.
+    The model must be related to a `DatabaseSynchronizer` subclasses.
 
     """
-    _name = "connector.odbc.import.register"
+    _name = "connector.database.import.register"
 
     _order = 'sequence'
     _rec_name = 'model_id'
@@ -194,7 +194,7 @@ class odcb_register(models.Model):
         'Last import date'
     )
     backend_id = fields.Many2one(
-        'connector.odbc.data.server.backend',
+        'connector.database.data.server.backend',
         'Related Backend',
         required=True
     )
@@ -224,16 +224,16 @@ class odcb_register(models.Model):
         return True
 
 
-class odbc_backend(models.Model):
-    """Base ODBC connector backend
+class database_backend(models.Model):
+    """Base Database connector backend
 
     Please refer to connector backend documentation
 
     """
-    _name = "connector.odbc.data.server.backend"
+    _name = "connector.database.data.server.backend"
     _inherit = "connector.backend"
-    _description = """ODBC backend"""
-    _backend_type = "odbc_server"
+    _description = """Database backend"""
+    _backend_type = "database_server"
 
     @api.multi
     def get_environment(self, model_name, filter=None):
@@ -273,19 +273,19 @@ class odbc_backend(models.Model):
         required=True
     )
     import_register_ids = fields.One2many(
-        'connector.odbc.import.register',
+        'connector.database.import.register',
         'backend_id',
         'Model to import'
     )
 
     @api.one
-    @api.returns('connector.odbc.import.register')
+    @api.returns('connector.database.import.register')
     def _get_register(self, model_name, context=None):
         """Return connector import register related to model name
 
         :param model_name: Odoo model name taken form `_name` property
 
-        :return: a record of model `connector.odbc.import.register`
+        :return: a record of model `connector.database.import.register`
         :rtype: :py:class: `model.Model` record
 
         """
@@ -388,62 +388,62 @@ class odbc_backend(models.Model):
         return self.delay_import(models, full=False)
 
 
-class base_odbc_binding(models.AbstractModel):
+class base_database_binding(models.AbstractModel):
     """Base abstract binding model"""
     _name = "obdc.base.server.binding"
     _inherit = 'external.binding'
 
     backend_id = fields.Many2one(
-        'connector.odbc.data.server.backend',
-        'ODBC Data Backend',
+        'connector.database.data.server.backend',
+        'Database Data Backend',
         required=True,
         ondelete='restrict'
     )
 
 
-class odbc_binding(models.AbstractModel):
+class database_binding(models.AbstractModel):
     """Abstact binding model to create binding between backend
     unique code and openerp id based on a string code
 
     """
 
     _inherit = 'obdc.base.server.binding'
-    _name = "odbc.string.server.binding"
-    _description = """Abstact binding class for ODBC data"""
+    _name = "database.string.server.binding"
+    _description = """Abstact binding class for Database data"""
 
-    odbc_code = fields.Char(
-        'ODBC unique Code',
-        help="Store unique value of ODBC source"
+    database_code = fields.Char(
+        'Database unique Code',
+        help="Store unique value of Database source"
         " mulitpe key is not supported yet"
     )
 
 
-class odbc_numerical_binding(models.AbstractModel):
+class database_numerical_binding(models.AbstractModel):
     """Abstact binding model to create binding between backend
     unique code and openerp id based on a numerical code
 
     """
-    _name = "odbc.numerical.server.binding"
+    _name = "database.numerical.server.binding"
     _inherit = 'obdc.base.server.binding'
-    _description = """Abstact binding class for odbc data"""
-    odbc_code = fields.Integer(
-        'ODBC numerical unique id',
-        help="Store unique value of ODBC source"
+    _description = """Abstact binding class for database data"""
+    database_code = fields.Integer(
+        'Database numerical unique id',
+        help="Store unique value of Database source"
         " mulitpe key is not supported yet"
     )
 
 
-class odbc_datetime_binding(models.AbstractModel):
-    """Abstact class to create binding between backend browse odbc id, openerp id
+class database_datetime_binding(models.AbstractModel):
+    """Abstact class to create binding between backend browse database id, openerp id
     based on a datetime id
 
     """
-    _name = "odbc.datetime.server.binding"
+    _name = "database.datetime.server.binding"
     _inherit = 'obdc.base.server.binding'
-    _description = """Abstact binding class for odbc data"""
+    _description = """Abstact binding class for database data"""
 
-    odbc_code = fields.Datetime(
-        'ODBC datetime unique id',
-        help="Store unique value of ODBC source"
+    database_code = fields.Datetime(
+        'Database datetime unique id',
+        help="Store unique value of Database source"
         " mulitpe key is not supported yet"
     )

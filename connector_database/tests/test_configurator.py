@@ -25,14 +25,14 @@ class ConfiguratorTester(test_common.TransactionCase):
 
     def test_import_configurator(self):
         """Test the creation of a register with configurator"""
-        backend_model = self.registry('connector.odbc.data.server.backend')
+        backend_model = self.registry('connector.database.data.server.backend')
         configurator_model = self.registry(
-            'connector.odbc.import.configurator'
+            'connector.database.import.configurator'
             )
         b_id = backend_model.create(
             self.cr,
             self.uid,
-            {'name': 'Test ODBC connect',
+            {'name': 'Test Database connect',
              'version': '1.0',
              'dsn': 'Dummy'}
         )
@@ -40,7 +40,7 @@ class ConfiguratorTester(test_common.TransactionCase):
         model_id = self.registry('ir.model').search(
             self.cr,
             self.uid,
-            [('model', '=', 'odbc.data.connector.test.code.a')],
+            [('model', '=', 'database.data.connector.test.code.a')],
         )
 
         self.assertTrue(model_id)
@@ -61,21 +61,21 @@ class ConfiguratorTester(test_common.TransactionCase):
         configurator.create_register()
         backend = backend_model.browse(self.cr, self.uid, b_id)
         self.assertTrue(backend.import_register_ids)
-        reg = backend._get_register('odbc.data.connector.test.code.a')
-        self.assertEqual(reg.model_id.model, 'odbc.data.connector.test.code.a')
+        reg = backend._get_register('database.data.connector.test.code.a')
+        self.assertEqual(reg.model_id.model, 'database.data.connector.test.code.a')
         self.assertEqual(reg.backend_id.id, backend.id)
         self.assertEqual(reg.sequence, 3)
 
     def test_fields_view_get(self):
-        backend_model = self.registry('connector.odbc.data.server.backend')
+        backend_model = self.registry('connector.database.data.server.backend')
         configurator_model = self.registry(
-            'connector.odbc.import.configurator'
+            'connector.database.import.configurator'
             )
 
         b_id = backend_model.create(
             self.cr,
             self.uid,
-            {'name': 'Test ODBC connect',
+            {'name': 'Test Database connect',
              'version': '1.0',
              'dsn': 'Dummy'}
         )

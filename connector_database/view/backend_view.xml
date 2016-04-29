@@ -2,25 +2,25 @@
   <data>
     <!-- for button -->
     <record id="action_importer_add" model="ir.actions.act_window">
-      <field name="name">Add an odbc import</field>
-      <field name="res_model">connector.odbc.import.configurator</field>
-      <field name="src_model">connector.odbc.data.server.backend</field>
+      <field name="name">Add an database import</field>
+      <field name="res_model">connector.database.import.configurator</field>
+      <field name="src_model">connector.database.data.server.backend</field>
       <field name="view_type">form</field>
       <field name="view_mode">form</field>
       <field name="target">new</field>
       <field name="help">help</field>
     </record>
 
-    <record id="odbc_connector_backend_form" model="ir.ui.view">
+    <record id="database_connector_backend_form" model="ir.ui.view">
       <field name="name">master data connector backend form</field>
-      <field name="model">connector.odbc.data.server.backend</field>
+      <field name="model">connector.database.data.server.backend</field>
       <field name="arch" type="xml">
-        <form version="7.0" string="ODBC Data connector">
+        <form version="7.0" string="Database Data connector">
           <header>
             <button name="%(action_importer_add)d"
                     string="Add an import"
                     type="action"
-                    help="This button will allows you to add a preconfigured ODBC import"/>
+                    help="This button will allows you to add a preconfigured Database import"/>
 
           </header>
           <sheet>
@@ -31,13 +31,13 @@
             <notebook>
               <page string="Actions">
                 <group>
-                <label string="Import all datas from ODBC: "/>
+                <label string="Import all datas from Database: "/>
                 <button name="import_all"
                         type="object"
                         string="Import all"/>
                 </group>
                 <group>
-                <label string="Import all datas from ODBC using jobs: "/>
+                <label string="Import all datas from Database using jobs: "/>
                 <button name="import_all_delayed"
                         type="object"
                         string="Import all using jobs"/>
@@ -72,42 +72,42 @@
       </field>
     </record>
 
-    <record id="odbc_connector_backend_list" model="ir.ui.view">
+    <record id="database_connector_backend_list" model="ir.ui.view">
       <field name="name">master data connector backend form</field>
-      <field name="model">connector.odbc.data.server.backend</field>
+      <field name="model">connector.database.data.server.backend</field>
       <field name="arch" type="xml">
-        <tree version="7.0" string="ODBC Data connector">
+        <tree version="7.0" string="Database Data connector">
           <field name="name"/>
         </tree>
       </field>
     </record>
 
     <menuitem
-        name="ODBC data backend"
+        name="Database data backend"
         parent="connector.menu_connector_root"
-        id="root_connector_odbc_backend_menu"/>
+        id="root_connector_database_backend_menu"/>
 
-    <record model="ir.actions.act_window" id="connector_odbc_backend">
-      <field name="name">ODBC Backend</field>
+    <record model="ir.actions.act_window" id="connector_database_backend">
+      <field name="name">Database Backend</field>
       <field name="type">ir.actions.act_window</field>
-      <field name="res_model">connector.odbc.data.server.backend</field>
+      <field name="res_model">connector.database.data.server.backend</field>
       <field name="domain"></field>
       <field name="view_type">form</field>
       <field name="view_mode">tree,form</field>
-      <field name="view_id" ref="odbc_connector_backend_list"/>
+      <field name="view_id" ref="database_connector_backend_list"/>
     </record>
 
 
     <menuitem
-        name="ODBC server Backend"
-        parent="root_connector_odbc_backend_menu"
-        action="connector_odbc_backend"
-        id="connector_odbc_backend_menu"/>
+        name="Database server Backend"
+        parent="root_connector_database_backend_menu"
+        action="connector_database_backend"
+        id="connector_database_backend_menu"/>
 
 
-    <record id="add_connector_odbc_importer_config" model="ir.ui.view">
-      <field name="name">add connector odbc importer config</field>
-      <field name="model">connector.odbc.import.configurator</field>
+    <record id="add_connector_database_importer_config" model="ir.ui.view">
+      <field name="name">add connector database importer config</field>
+      <field name="model">connector.database.import.configurator</field>
       <field name="arch" type="xml">
         <form version="7.0" string="Add an import">
           <separator string="Configure what to import from current DSN" colspan="4"/>
@@ -140,7 +140,7 @@
 
     <!-- for button -->
     <record id="action_importer_add" model="ir.actions.act_window">
-      <field name="view_id" ref="add_connector_odbc_importer_config"/>
+      <field name="view_id" ref="add_connector_database_importer_config"/>
     </record>
 
   </data>

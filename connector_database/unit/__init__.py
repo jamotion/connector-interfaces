@@ -18,7 +18,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
-from openerp.addons.connector import backend
-
-odbc_backend = backend.Backend('odbc_server')
-odbc_backend_v1 = backend.Backend(parent=odbc_backend, version="1.0")
+from . import database_adapter
+from . import import_synchronizer
+from . import binder
+from . import mapper

@@ -28,33 +28,33 @@ from ..unit import import_synchronizer
 _logger = logging.getLogger(__name__)
 
 
-class ODBCBaseTestClass(test_common.SingleTransactionCase):
+class DatabaseBaseTestClass(test_common.SingleTransactionCase):
     def _get_backend(self):
         b_ids = self.backend_model.search(self.cr, self.uid,
-                                          [('name', '=', 'Test ODBC connect')])
+                                          [('name', '=', 'Test Database connect')])
         if b_ids:
             b_id = b_ids[0]
         else:
             b_id = self.backend_model.create(self.cr, self.uid,
-                                             {'name': 'Test ODBC connect',
+                                             {'name': 'Test Database connect',
                                               'version': '1.0',
                                               'dsn': 'Dummy'})
         return self.backend_model.browse(self.cr, self.uid, b_id)
 
     def setUp(self):
-        super(ODBCBaseTestClass, self).setUp()
+        super(DatabaseBaseTestClass, self).setUp()
         self.backend_model = self.registry(
-            'connector.odbc.data.server.backend'
+            'connector.database.data.server.backend'
         )
         self.backend = self._get_backend()
         self.connector_env = self._get_backend().get_environment(
-            'odbc.data.connector.test.code.a'
+            'database.data.connector.test.code.a'
         )
         # We do not want to commit during test
         import_synchronizer.FORCE_COMMIT = False
 
     def tearDown(self):
-        super(ODBCBaseTestClass, self).tearDown()
+        super(DatabaseBaseTestClass, self).tearDown()
         # We enable commit after tests
         import_synchronizer.FORCE_COMMIT = True
 

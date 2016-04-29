@@ -31,29 +31,29 @@ from openerp.addons.connector.unit.backend_adapter import BackendAdapter
 _logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
-ODBC_MAX_CHUNK = 2000
+DATABASE_MAX_CHUNK = 2000
 
 
-class ODBCAdapter(BackendAdapter):
-    """Base connector ODBC adapter"""
+class DatabaseAdapter(BackendAdapter):
+    """Base connector Database adapter"""
     _cnx = None
     _table_name = None
-    # unique identifier of the odbc database
+    # unique identifier of the database database
     # multiple column key not identified
     _prefix = None
     _data_set_lookup_disable = False
     _filter_read = False
 
     def _connect(self):
-        ODBCAdapter._cnx = pyodbc.connect(self.backend_record.dsn,
+        DatabaseAdapter._cnx = pyodbc.connect(self.backend_record.dsn,
                                           unicode_results=True)
 
     @property
     def cnx(self):
         with lock:
-            if ODBCAdapter._cnx is None:
+            if DatabaseAdapter._cnx is None:
                 self._connect()
-            cursor = ODBCAdapter._cnx.cursor()
+            cursor = DatabaseAdapter._cnx.cursor()
             # we check if cursor is active, Naive implementation
             try:
                 cursor.execute('SELECT 1').fetchone()
@@ -61,7 +61,7 @@ class ODBCAdapter(BackendAdapter):
                 self._connect()
             finally:
                 cursor.close()
-        return ODBCAdapter._cnx
+        return DatabaseAdapter._cnx
 
     def _sql_query(self, sql, *args):
         """Execute an SQL query and return pyodbc rows
@@ -130,7 +130,7 @@ class ODBCAdapter(BackendAdapter):
         return " create_time > ? or modify_time > ?", [date, date]
 
     def get_read_sql(self, code_slice):
-        """Provides default SQL to read from ODBC data
+        """Provides default SQL to read from Database data
 
         :param code_slice: list of external code to read
         :type code_slice: iterable of string
@@ -172,23 +172,23 @@ class ODBCAdapter(BackendAdapter):
         return (x for x in data_set
                 if getattr(x, self.get_unique_key_column(), None) == code)
 
-    def read(self, odbc_codes, data_set=None):
-        """ Return a generator of data read from ODBC date source
+    def read(self, database_codes, data_set=None):
+        """ Return a generator of data read from Database date source
 
-        :odbc_codes: list of code to read
-        :type odbc_code: list
+        :database_codes: list of code to read
+        :type database_code: list
         :param data_set: Memoizer dict
         :type data_set: dict
 
-        :return: a generator of data read from ODBC date source
+        :return: a generator of data read from Database date source
         :rtype: generator
         """
-        if not isinstance(odbc_codes, list):
-            odbc_codes = [odbc_codes]
+        if not isinstance(database_codes, list):
+            database_codes = [database_codes]
         # Optimisation tweak, negotiate database connexion is consumming
         # and not efficient for initial import
         if data_set and not self._data_set_lookup_disable:
-            for code in odbc_codes:
+            for code in database_codes:
                 lookup = self.lookup_data_set(data_set, code)
                 for row in lookup:
                     yield row
@@ -197,8 +197,8 @@ class ODBCAdapter(BackendAdapter):
         # SQL server number of remote argument are limited to 2100
         # we slice code in part of 2000
         # Slice code taken from Python Cookbook
-        sliced_codes = [odbc_codes[i:i + ODBC_MAX_CHUNK]
-                        for i in xrange(0, len(odbc_codes), ODBC_MAX_CHUNK)]
+        sliced_codes = [database_codes[i:i + DATABASE_MAX_CHUNK]
+                        for i in xrange(0, len(database_codes), DATABASE_MAX_CHUNK)]
         for code_slice in sliced_codes:
             sql = self.get_read_sql(code_slice)
             if self._filter_read:
@@ -208,7 +208,7 @@ class ODBCAdapter(BackendAdapter):
                 yield row
 
     def get_missing_sql(self, code_slice):
-        """Provides default SQL to read ODBC data
+        """Provides default SQL to read Database data
         that are not in openerp
 
         :param code_slice: list of external code to read
@@ -237,8 +237,8 @@ class ODBCAdapter(BackendAdapter):
         # SQL server number of remote argument are limited to 2100
         # we slice code in part of 2000
         # Slice code taken from Python cookbook
-        sliced_codes = [codes[i:i + ODBC_MAX_CHUNK]
-                        for i in xrange(0, len(codes), ODBC_MAX_CHUNK)]
+        sliced_codes = [codes[i:i + DATABASE_MAX_CHUNK]
+                        for i in xrange(0, len(codes), DATABASE_MAX_CHUNK)]
         res = set()
         for code_slice in sliced_codes:
             sql = self.get_missing_sql(code_slice)
@@ -248,11 +248,11 @@ class ODBCAdapter(BackendAdapter):
         return list(existing - res)
 
     def search(self, date=False):
-        """Search all data in ODBC backend at lookup date
+        """Search all data in Database backend at lookup date
 
         :param date: lookup date for data
         :type date: Odoo date string
-        :return: a list of odbc code
+        :return: a list of database code
         :rtype: list
         """
         # Some databases does not suport alias in where clause

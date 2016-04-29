@@ -36,11 +36,11 @@ class CursorMock(MagicMock):
         return sql_data[key]
 
 
-def pyodbc_mock(*args, **kwargs):
-    # pyodbc has no context manager
-    # see http://code.google.com/p/pyodbc/issues/detail?id=100
-    cnx_mock = MagicMock(spec=['cursor'], name="pyodbc.totoconnect")
+def pydatabase_mock(*args, **kwargs):
+    # pydatabase has no context manager
+    # see http://code.google.com/p/pydatabase/issues/detail?id=100
+    cnx_mock = MagicMock(spec=['cursor'], name="pydatabase.totoconnect")
     cursor_mock = CursorMock(spec=['execute', 'fetchall', 'fetchone', 'close'],
-                             name="pyodbc.cnx.cursor")
+                             name="pydatabase.cnx.cursor")
     cnx_mock.cursor.return_value = cursor_mock
     return cnx_mock

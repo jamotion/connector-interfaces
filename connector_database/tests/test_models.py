@@ -19,20 +19,20 @@
 #
 ##############################################################################
 from openerp.addons.connector.unit.mapper import mapping, only_create
-from ..unit.mapper import ODBCRowImportMapper
-from ..backend import odbc_backend
-from ..unit.binder import odbc_bound
-from ..unit.import_synchronizer import (DirectBatchODBCSynchronizer,
-                                        DelayedBatchODBCSynchronizer,
-                                        ODBCSynchronizer)
-from ..unit.odbc_adapter import ODBCAdapter
+from ..unit.mapper import DatabaseRowImportMapper
+from ..backend import database_backend
+from ..unit.binder import database_bound
+from ..unit.import_synchronizer import (DirectBatchDatabaseSynchronizer,
+                                        DelayedBatchDatabaseSynchronizer,
+                                        DatabaseSynchronizer)
+from ..unit.database_adapter import DatabaseAdapter
 from openerp.osv import orm, fields
 
 
 class test_code_a(orm.Model):
     """Dummy model only used for sychronization tests"""
 
-    _name = "odbc.connector.test.code.a"
+    _name = "database.connector.test.code.a"
     _description = """Dummy model only used for test"""
     _columns = {'code': fields.char('Code', required=True,
                                     select=True),
@@ -46,44 +46,44 @@ class test_code_a(orm.Model):
     _defaults = {'active': True}
 
 
-@odbc_bound
-class odbc_code_a(orm.Model):
+@database_bound
+class database_code_a(orm.Model):
     """Test model"""
-    _inherit = "odbc.string.server.binding"
-    _inherits = {'odbc.connector.test.code.a': 'openerp_id'}
-    _name = "odbc.data.connector.test.code.a"
-    _description = """external table into odbc.connector.test.code.a"""
+    _inherit = "database.string.server.binding"
+    _inherits = {'database.connector.test.code.a': 'openerp_id'}
+    _name = "database.data.connector.test.code.a"
+    _description = """external table into database.connector.test.code.a"""
 
-    _columns = {'openerp_id': fields.many2one('odbc.connector.test.code.a',
+    _columns = {'openerp_id': fields.many2one('database.connector.test.code.a',
                                               'Test code',
                                               required=True,
                                               ondelete='restrict')}
 
     _sql_contraints = [
-        ('odbc_uniq', 'unique(backend_id, odbc_code)',
-         'A test code with same ODBC data code already exists')
+        ('database_uniq', 'unique(backend_id, database_code)',
+         'A test code with same Database data code already exists')
     ]
 
 
-@odbc_backend
-class TestCodeODBCSynchronizer(ODBCSynchronizer):
-    _model_name = "odbc.data.connector.test.code.a"
+@database_backend
+class TestCodeDatabaseSynchronizer(DatabaseSynchronizer):
+    _model_name = "database.data.connector.test.code.a"
 
 
-@odbc_backend
-class TestCodeDirectBatchODBCSynchronizer(DirectBatchODBCSynchronizer):
-    _model_name = "odbc.data.connector.test.code.a"
+@database_backend
+class TestCodeDirectBatchDatabaseSynchronizer(DirectBatchDatabaseSynchronizer):
+    _model_name = "database.data.connector.test.code.a"
 
 
-@odbc_backend
-class TestCodeDelayedBatchODBCSynchronizer(DelayedBatchODBCSynchronizer):
-    _model_name = "odbc.data.connector.test.code.a"
+@database_backend
+class TestCodeDelayedBatchDatabaseSynchronizer(DelayedBatchDatabaseSynchronizer):
+    _model_name = "database.data.connector.test.code.a"
 
 
-@odbc_backend
-class CustomerODBCObjectAdapter(ODBCAdapter):
+@database_backend
+class CustomerDatabaseObjectAdapter(DatabaseAdapter):
     _table_name = "mega_code_table"
-    _model_name = "odbc.data.connector.test.code.a"
+    _model_name = "database.data.connector.test.code.a"
 
     def get_date_columns(self):
         return ("mg_createTime", "mg_modifyTime")
@@ -95,17 +95,17 @@ class CustomerODBCObjectAdapter(ODBCAdapter):
         return "WHERE status = ?", ['Active']
 
 
-@odbc_backend
-class CustomerMapper(ODBCRowImportMapper):
-    _model_name = "odbc.data.connector.test.code.a"
+@database_backend
+class CustomerMapper(DatabaseRowImportMapper):
+    _model_name = "database.data.connector.test.code.a"
     direct = [('mg_name', 'name'),
               ('mg_code', 'code'),
               ('mg_desc', 'desc')]
 
     @only_create
     @mapping
-    def odbc_code(self, record):
-        return {'odbc_code': record.mg_code}
+    def database_code(self, record):
+        return {'database_code': record.mg_code}
 
     @only_create
     @mapping
@@ -115,6 +115,6 @@ class CustomerMapper(ODBCRowImportMapper):
     @only_create
     @mapping
     def date_datetime(self, record):
-        # odbc return real date datetime object
+        # database return real date datetime object
         return {'test_date': str(record.x_date),
                 'test_datetime': str(record.x_datetime)}

@@ -22,19 +22,19 @@ from __future__ import absolute_import
 from openerp import fields
 from openerp.osv import orm
 from openerp.addons.connector.connector import Binder
-from openerp.addons.connector_odbc.backend import odbc_backend
+from openerp.addons.connector_database.backend import database_backend
 
 
-@odbc_backend
-class ODBCBinder(Binder):
-    """ Manage bindings between Models identifier and ODBC identifier"""
+@database_backend
+class DatabaseBinder(Binder):
+    """ Manage bindings between Models identifier and Database identifier"""
     _model_name = []
 
-    def to_openerp(self, odbc_code, unwrap=False):
+    def to_openerp(self, database_code, unwrap=False):
         """Returns the Odoo id for an external ID""
 
-        :param odbc_code: odbc row unique idenifier
-        :type odbc_code: str
+        :param database_code: database row unique idenifier
+        :type database_code: str
 
         :param unwrap: If True returns the id of the record related
                        to the binding record
@@ -45,7 +45,7 @@ class ODBCBinder(Binder):
         """
         binding_ids = self.session.search(
             self.model._name,
-            [('odbc_code', '=', odbc_code),
+            [('database_code', '=', database_code),
              ('backend_id', '=', self.backend_record.id)]
         )
         if not binding_ids:
@@ -67,11 +67,11 @@ class ODBCBinder(Binder):
 
         :return: external code of `binding_id`
         """
-        odbc_record = self.session.read(self.model._name,
+        database_record = self.session.read(self.model._name,
                                         binding_id,
-                                        ['odbc_code'])
-        assert odbc_record, 'No corresponding binding found'
-        return odbc_record['odbc_code']
+                                        ['database_code'])
+        assert database_record, 'No corresponding binding found'
+        return database_record['database_code']
 
     @classmethod
     def register_external_binding(cls, binding_class):
@@ -112,25 +112,25 @@ class ODBCBinder(Binder):
         """ Create the link between an external id and an Odoo row and
         by updating the last synchronization date and the external code.
 
-        :param external_id: ODBC unique identifier
+        :param external_id: Database unique identifier
         :param binding_id: Binding record id
         :type binding_id: int
         """
-        # avoid to trigger the export when we modify the `odbc code`
+        # avoid to trigger the export when we modify the `database code`
         context = self.session.context.copy()
         context['connector_no_export'] = True
         now_fmt = fields.Datetime.now()
         self.environment.model.write(self.session.cr,
                                      self.session.uid,
                                      binding_id,
-                                     {'odbc_code': external_id,
+                                     {'database_code': external_id,
                                       'sync_date': now_fmt},
                                      context=context)
 
     def create_binding_from_record(self, external_id, internal_id):
         """Create a binding record for a exsiting Odoo record
 
-        :param external_id: ODBC unique identifier
+        :param external_id: Database unique identifier
         :param internal_id: Odoo record id
         :type internal_id: int
 
@@ -139,7 +139,7 @@ class ODBCBinder(Binder):
         return self.environment.model.create(
             self.session.cr,
             self.session.uid,
-            {'odbc_code': external_id,
+            {'database_code': external_id,
              'sync_date': now_fmt,
              'openerp_id': internal_id,
              'backend_id': self.backend_record.id},
@@ -147,9 +147,9 @@ class ODBCBinder(Binder):
         )
 
 
-def odbc_bound(cls):
+def database_bound(cls):
     """ Register a binding model that inherits from external.binding
     :param cls: class to register
     """
-    ODBCBinder.register_external_binding(cls)
+    DatabaseBinder.register_external_binding(cls)
     return cls

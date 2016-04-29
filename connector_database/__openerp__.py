@@ -17,7 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
-{'name': 'ODBC connector',
+{'name': 'Database connector',
  'version': '0.1',
  'author': 'Camptocamp',
  'maintainer': 'Camptocamp',
@@ -27,7 +27,7 @@
  'description': """
 Import data from other databases using connector framework.
 
-Synchronize data from odbc compatible database source.
+Synchronize data from database compatible database source.
 You will find in tests folder a sample of implementation.
 
 Under the sample folder you will find sample
