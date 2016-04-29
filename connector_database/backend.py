@@ -21,4 +21,3 @@
 from openerp.addons.connector import backend
 
 database_backend = backend.Backend('database_server')
-database_backend_v1 = backend.Backend(parent=database_backend, version="1.0")

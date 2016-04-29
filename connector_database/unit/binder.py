@@ -30,34 +30,30 @@ class DatabaseBinder(Binder):
     """ Manage bindings between Models identifier and Database identifier"""
     _model_name = []
 
-    def to_openerp(self, database_code, unwrap=False):
+    def to_openerp(self, mysql_code, unwrap=False, browse=False):
         """Returns the Odoo id for an external ID""
 
-        :param database_code: database row unique idenifier
-        :type database_code: str
-
-        :param unwrap: If True returns the id of the record related
-                       to the binding record
-
-        :return: id of binding or if unwrapped the id of the record related
-                 to the binding record
-        :rtype: int
+        :param database_code: Database row unique idenifier
+        :param unwrap: if True, returns the normal record (the one
+                       inherits'ed), else return the binding record
+        :param browse: if True, returns a recordset
+        :return: a recordset or id of one record, depending on the value of
+                 unwrap and browse, or None or an empty recordset if no
+                 binding is found
+        :rtype: recordset
         """
-        binding_ids = self.session.search(
-            self.model._name,
+        bindings = self.env[self.model._name].search(
             [('database_code', '=', database_code),
              ('backend_id', '=', self.backend_record.id)]
         )
-        if not binding_ids:
-            return None
-        assert len(binding_ids) == 1, "Several records found: %s" % binding_ids
-        binding_id = binding_ids[0]
+
+        if not bindings:
+            return self.model.browse() if browse else None
+        assert len(bindings) == 1, "Several records found: %s" % (bindings,)
         if unwrap:
-            return self.session.read(self.model._name,
-                                     binding_id,
-                                     ['openerp_id'])['openerp_id'][0]
+            return bindings.openerp_id if browse else bindings.openerp_id.id
         else:
-            return binding_id
+            return bindings if browse else bindings.id
 
     def to_backend(self, binding_id):
         """Return the external code for a given binding model id
@@ -67,9 +63,7 @@ class DatabaseBinder(Binder):
 
         :return: external code of `binding_id`
         """
-        database_record = self.session.read(self.model._name,
-                                        binding_id,
-                                        ['database_code'])
+        database_record = self.env[self.model._name].browse(binding_id)
         assert database_record, 'No corresponding binding found'
         return database_record['database_code']
 
@@ -117,15 +111,9 @@ class DatabaseBinder(Binder):
         :type binding_id: int
         """
         # avoid to trigger the export when we modify the `database code`
-        context = self.session.context.copy()
-        context['connector_no_export'] = True
         now_fmt = fields.Datetime.now()
-        self.environment.model.write(self.session.cr,
-                                     self.session.uid,
-                                     binding_id,
-                                     {'database_code': external_id,
-                                      'sync_date': now_fmt},
-                                     context=context)
+        with self.session.change_context(connector_no_export=True):
+            binding_id.write({'database_code': external_id, 'sync_date': now_fmt})
 
     def create_binding_from_record(self, external_id, internal_id):
         """Create a binding record for a exsiting Odoo record
@@ -137,13 +125,10 @@ class DatabaseBinder(Binder):
         """
         now_fmt = fields.Datetime.now()
         return self.environment.model.create(
-            self.session.cr,
-            self.session.uid,
             {'database_code': external_id,
              'sync_date': now_fmt,
              'openerp_id': internal_id,
-             'backend_id': self.backend_record.id},
-            context=self.session.context
+             'backend_id': self.backend_record.id}
         )
 
 

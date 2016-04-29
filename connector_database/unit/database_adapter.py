@@ -37,6 +37,10 @@ DATABASE_MAX_CHUNK = 2000
 class DatabaseAdapter(BackendAdapter):
     """Base connector Database adapter"""
     _cnx = None
+    # Python module that implements DB-API
+    _module = None
+    # placeholder for arguments in queries / prepared statements
+    _query_arg_placeholder = '?'
     _table_name = None
     # unique identifier of the database database
     # multiple column key not identified
@@ -44,8 +48,17 @@ class DatabaseAdapter(BackendAdapter):
     _data_set_lookup_disable = False
     _filter_read = False
 
+    def _connect_arguments(self):
+        return self.backend_record.dsn, {}
+
     def _connect(self):
-        DatabaseAdapter._cnx = pyodbc.connect(self.backend_record.dsn,
+        if not self._module:
+            raise NotImplementedError(
+                "DB API module must be specified in a superclass"
+            )
+        args, kwargs = self._connect_arguments()
+        DatabaseAdapter._cnx = self._module.connect(*args, **kwargs)
+        DatabaseAdapter._cnx = module.connect(self.backend_record.dsn,
                                           unicode_results=True)
 
     @property
@@ -57,7 +70,7 @@ class DatabaseAdapter(BackendAdapter):
             # we check if cursor is active, Naive implementation
             try:
                 cursor.execute('SELECT 1').fetchone()
-            except pyodbc.ProgrammingError:
+            except self._module.ProgrammingError:
                 self._connect()
             finally:
                 cursor.close()
@@ -71,8 +84,8 @@ class DatabaseAdapter(BackendAdapter):
 
         :return: pyodbc rows see https://code.google.com/p/pyodbc/wiki/Rows
         """
-        # pyodbc has no context manager
-        # see http://code.google.com/p/pyodbc/issues/detail?id=100
+        # _module may have no context manager
+        # e.g. see http://code.google.com/p/pyodbc/issues/detail?id=100
         cursor = self.cnx.cursor()
         try:
             if args:
@@ -81,7 +94,7 @@ class DatabaseAdapter(BackendAdapter):
                 cursor.execute(sql)
             # We may use fetchmany with smaller data range
             return cursor.fetchall()
-        except pyodbc.DatabaseError as exc:
+        except self._module.DatabaseError as exc:
             _logger.error((sql, args))
             _logger.error(repr(exc))
             raise exc
@@ -94,7 +107,7 @@ class DatabaseAdapter(BackendAdapter):
         :return: unique key
         :rtype: str
         """
-        raise NotImplemented(
+        raise NotImplementedError(
             'get_unique_key_column not implemented for %s' % self
         )
 
@@ -127,7 +140,9 @@ class DatabaseAdapter(BackendAdapter):
         :rtype: str
 
         """
-        return " create_time > ? or modify_time > ?", [date, date]
+        return " create_time > %s or modify_time > %s" \
+            % self._query_arg_placeholder,
+            [date, date]
 
     def get_read_sql(self, code_slice):
         """Provides default SQL to read from Database data
@@ -139,7 +154,7 @@ class DatabaseAdapter(BackendAdapter):
         :rtype: str
         """
         # pyodbc does not support array formatting
-        in_format = ', '.join(['?'] * len(code_slice))
+        in_format = ', '.join([self._query_arg_placeholder] * len(code_slice))
         if self._filter_read:
             sql = "SELECT *%s FROM %s %s AND %s IN (%s)" % (
                 self.adapt_dates_query(),
@@ -217,7 +232,7 @@ class DatabaseAdapter(BackendAdapter):
         :rtype: str
         """
         # pyodbc does not support array formatting
-        in_format = ', '.join(['?'] * len(code_slice))
+        in_format = ', '.join([self._query_arg_placeholder] * len(code_slice))
         sql = "SELECT %s FROM %s WHERE %s  IN (%s)" % (
             self.get_unique_key_column(),
             self._table_name,
@@ -225,6 +240,15 @@ class DatabaseAdapter(BackendAdapter):
             in_format
         )
         return sql
+
+    def code_from_row(self, row):
+        # If the cursor returns a dictionary, we can use the
+        #  the column name. If it returns a list, we assume it will be
+        #  at the first position (the query must be designed accordingly).
+        code_column = self.get_unique_key_column()
+        if isinstance(x, list):
+            code_column = 0
+        return row[code_column]
 
     def missing(self, codes):
         """Get missing records in Odoo for current backend
@@ -242,8 +266,8 @@ class DatabaseAdapter(BackendAdapter):
         res = set()
         for code_slice in sliced_codes:
             sql = self.get_missing_sql(code_slice)
-            for x in self._sql_query(sql, *code_slice):
-                res.add(x[0])
+            for x in selfi._sql_query(sql, *code_slice):
+                res.add(self.code_from_row(x))
         existing = set(codes)
         return list(existing - res)
 
@@ -275,4 +299,4 @@ class DatabaseAdapter(BackendAdapter):
             sql += "WHERE %s" % date_where
         res = self._sql_query(sql, *args)
         # we may want to return generator but list seems more usable
-        return [x[0] for x in res]
+        return [self.code_from_row(x) for x in res]

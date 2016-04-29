@@ -264,7 +264,7 @@ class database_backend(models.Model):
         :return: list of tuple of available versions
         :rtype: list
         """
-        return [('1.0', '1.0')]
+        return []
 
     dsn = fields.Char('DSN', required=True)
     version = fields.Selection(

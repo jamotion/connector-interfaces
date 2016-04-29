@@ -27,4 +27,7 @@ class DatabaseRowImportMapper(ImportMapper):
 
     def _map_direct(self, record, from_attr, to_attr):
         """ Implement the way to apply direct mapping"""
-        return getattr(record, from_attr, None)
+        if type(record) is dict:
+            return record.get(from_attr, None)
+        else:
+            return getattr(record, from_attr, None)
